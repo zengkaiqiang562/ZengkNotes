@@ -1,0 +1,14 @@
+1. as 1.2 版本需要在Android Studio\bin\idea.properties文件中加入：
+	disable.android.first.run=true
+   即首次启动时，不允许as去连网检测，因为连网需翻墙
+
+   1.4版本之后不需上述操作即可进入as工作界面，但还会检测
+
+
+2. gradle在AndroidStudio中有对应的插件：Android Gradle Plugin 
+	“Android Studio\gradle\gradle-4.1”指gradle的版本是4.1
+	“classpath 'com.android.tools.build:gradle:3.0.0'”是指Android Gradle Plugin 的版本是3.0.0
+
+
+
+3. C:\Users\Administrator\.gradle中会放置从网络缓存的jar包（该目录会越来越大）

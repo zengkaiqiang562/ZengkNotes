@@ -1,0 +1,368 @@
+1. F:\迅雷下载\jni\jni01\资料\Linux2.6+API.chm文件可以找到C/C++中相关函数的定义，和包含它们的头文件
+
+
+2. .so动态库可以通过Android逆向助手工具反汇编elf，得到一个txt文件的汇编内容，开头几行能看出是32，还是64位的，以及是arm(arm-v5)，或x86, 或arm-v7
+
+
+3. 指定jni.h的源码路径： 在C/C++窗口下，File->Properties->Paths and Symbol-> 选择include的File System为F:\迅雷下载\jni\jni01\软件\android-ndk-r10e\platforms\android-19\arch-arm\usr\include
+
+4. 用javah生成java中本地方法对应的jni头文件：
+	jdk1.6 在D:\jni02\code\02_calc\bin\classes 与com同层目录下执行 javah com.itheima.calc.MainActivity （MainActivity.java中有native方法）
+        jdk1.7 在D:\jni02\code\02_calc\src执行（也是与com同层目录下执行）   javah com.itheima.calc.MainActivity
+
+5. jni的c文件中打印logcat:
+	Android.mk文件增加  
+	LOCAL_LDLIBS += -llog
+
+	C代码中增加
+	#include <android/log.h>
+	#define LOG_TAG "System.out"
+
+	//__VA_ARGS__ 表示多个参数
+	#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+	#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+
+	LOGI("info\n");
+	LOGD("debug\n");
+	LOGD("username : %s",username);
+
+
+	log中如果有中文字符，注意编码格式要改为utf-8（可能c文件中默认是GBK）
+
+	JNI编程-- undefined reference to `__android_log_print' 的原因：没有在Android.mk中添加 LOCAL_LDLIBS += -llog
+
+
+6. c代码中调用java方法
+	public void showDialog(final String msg)
+
+	//find class
+	//	jclass      (*FindClass)(JNIEnv*, const char*);
+	jclass clazz = (*env)->FindClass(env, "com/itheima/alipay/MainActivity");
+
+	// get methodID
+	//	jmethodID   (*GetMethodID)(JNIEnv*, jclass, const char*, const char*);
+	//"(Ljava/lang/String;)V" 表示java中的showDialog方法有一个形参，为String类型
+	jmethodID methodID = (*env)->GetMethodID(env, clazz, "showDialog", "(Ljava/lang/String;)V");
+
+	//call <return type> method
+	//	void        (*CallVoidMethod)(JNIEnv*, jobject, jmethodID, ...);   ... 表示jmethodID表示的java中方法的形参列表
+	(*env)->CallVoidMethod(env, obj, methodID, (*env)->NewStringUTF(env, msg));
+
+
+
+	public void dismissDialog()
+
+	//find class
+	//	jclass      (*FindClass)(JNIEnv*, const char*);
+	jclass clazz = (*env)->FindClass(env, "com/itheima/alipay/MainActivity");
+
+	// get methodID
+	//	jmethodID   (*GetMethodID)(JNIEnv*, jclass, const char*, const char*);
+	//"()V" 表示形参为空
+	jmethodID methodID = (*env)->GetMethodID(env, clazz, "dismissDialog", "()V");
+
+	//call <return type> method
+	//	void        (*CallVoidMethod)(JNIEnv*, jobject, jmethodID, ...);
+	//没有形参，可以不用写
+	(*env)->CallVoidMethod(env, obj, methodID);
+
+
+	获取形如"(Ljava/lang/String;)V"类型签名的方法：
+		在app的bin\classed\目录下，如E:\学习记录\JNI\bin\classes下执行： javap -h com.zengk.jnitest1.MainActivity
+		输出MainActivity中的所有方法的形参类型签名
+
+
+7. 将jstring类型转成char*类型：
+
+	//JNIEXPORT jint JNICALL Java_com_itheima_alipay_MainActivity_safePay(JNIEnv *env,
+	//	jobject obj, jstring jusername, jstring jpassword, jfloat money)
+
+	jsize len = 0;
+	char *username = NULL;
+
+	//jsize       (*GetStringLength)(JNIEnv*, jstring);
+	len = (*env)->GetStringLength(env, jusername);
+
+	username = (char *)malloc(len + 1);// '\0'
+
+	//void        (*GetStringUTFRegion)(JNIEnv*, jstring, jsize, jsize, char*);
+	(*env)->GetStringUTFRegion(env, jusername, 0, len, username);
+
+
+8. 从java本地方法传递数组是引用传递给c代码，如int[] -> jintarray.
+    都在同一地址内存空间，修改jnitarray，即修改int[]
+
+
+
+9. jni开发三种模式
+ 1.只有android开发工程师，完成从java到jni到c的开发
+	
+
+ 2.只有android开发工程师，但是.so库已经有，主要包装.so库中的函数
+
+
+ 3.有android工程师，还有c/c++工程师，把c工程师写好的.c程序和.h拷贝到 jni目录，包装调用。（Android.mk中要添加调用到的c文件，头文件只需要包含在c文件中，不需要在Android.mk中添加）
+
+
+
+
+10. jni用C编写代码和用C++的区别：
+	1. 文件名不同，C文件是.c, Android.mk中也是引用.c
+	               C++文件是.cpp, Android.mk中是引用.cpp
+
+	2. JNIEnv* env不同， c代码中它是二级指针; c++中是一级指针，具体参考jni.h
+
+	3. 编写jni规范的c文件可以不包含用javah命令生成的.h头文件; 但编写jni规范的c++文件必须包含此.h头文件
+
+
+
+11. 通过jni，在c/c++代码中调fork()函数可以创建一个新的子进程，该子进程从内存空间从父进程copy而来，但是代码区域是跟父进程共享的
+    （关于Linux中的fork函数，exit函数，access函数, system函数可参考"F:\迅雷下载\jni\jni01\资料\Linux2.6+API.chm" 文件
+	fork创建子进程，exit终止当前进程，access访问文件是否存在，system执行shell命令）
+	如果fork子进程的父进程杀掉了，子进程就会变成孤儿进程，此时，子进程的父进程会变成系统的init进程
+
+	在某个进程中调用fork函数，会创建一个新的子进程，如果创建失败，fork返回值<0;
+	如果创建成功，由于子进程是copy父进程的，并且代码区域是跟父进程共享的，而且在fork函数返回值之前就能创建成功，所以fork函数会有两次返回值，
+	一次在子进程中返回，返回值=0;
+	另一次在父进程中返回，返回值=子进程PID
+
+	(通过adb shell , ps 两个指令可以查看系统中的所有进程，PID表示当前进程ID，PPID表示当前进程的父进程的PID)
+
+
+	例子：jni实现监听apk卸载后弹出网页：
+
+		#include <jni.h>
+		#include <sys/types.h> //fork()
+		#include <unistd.h>
+		#include <stdlib.h>
+
+		#include <android/log.h>
+		#define LOG_TAG "System.out"
+		#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+		#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+
+		JNIEXPORT void JNICALL Java_com_itheima_uninstatlllisten_MainActivity_forkProcess(JNIEnv *env, jobject obj) {
+
+			int pid = 0;
+
+			pid = fork();
+			if (pid < 0) { //创建失败
+				exit(-1);
+			} else if (pid == 0) { //fork()在子进程中返回0,新产生的子进程满足
+				while (1) {
+		//			LOGD("pid = %d", pid);
+					//检测/data/data/com.itheima.uninstatlllisten是否存在判断应用是否被卸载
+					if(access("/data/data/com.itheima.uninstatlllisten",F_OK) < 0){
+						//弹出网页
+		//				system("am start -a android.intent.action.VIEW -d http://www.baidu.com/");//4.2以下
+						system("am start --user 0 -a android.intent.action.VIEW -d http://www.baidu.com/");//4.2以上
+
+						//execlp("am","am","start","-a","android.intent.action.VIEW","-d","http://www.baidu.com/",NULL);
+						exit(0);
+					}
+
+					sleep(1);
+				}
+			} else if (pid > 0) { //fork()在父进程中返回子进程pid
+		//		LOGD("PID = %d",pid);
+			}
+
+		}
+
+
+
+12.使用AndroidStudio编写JNI
+	1. 选中module，右键创建Folder -> JNI Folder  : 默认在src/main/下创建jni文件夹
+	2. 选中jni文件夹，右键新建C/C++文件
+	3. 在jni目录下新建Android.mk文件
+	4. 在as的终端中进入module下的src/main/java目录（与navite所在文件的包名开始的目录同级），执行javah 类的全路径名生成navite方法对应的.h头文件
+	5. 将.h头文件拷贝到jni目录下，生成的那个头文件删了
+
+
+	注意：
+		1. 使用NDK一定要先在build.gradle下要配置ndk-build的相关路径，这样在编写本地代码时才会有相关的提示功能，并且可以关联到相关的头文件：
+			   android{
+				...
+				externalNativeBuild {
+				    ndkBuild {
+				        path 'src/main/jni/Android.mk'
+				    }
+				}
+			    }
+
+
+13. Eclipse中编写JNI参考“F:\迅雷下载\jni\jni02\jni02.md”
+			   
+
+
+14.ViewPager: “F:\迅雷下载\自定义控件\第一天\code\01_ViewPagerDemo13”
+	ViewPager的PagerAdapter的使用（4个方法的作用）
+	ViewPager实现无限轮播
+
+	绘制原点图标
+
+				
+	
+15. Android中没有圆形的组件，所有组件都是矩形的，就算有圆形的组件，也是通过外接矩形的方式实现的
+    
+    实现圆形菜单的布局（RelatiLayout实现三个大小不同的圆环菜单的布局，菜单选项Icon通过相对其他icon布局实现在圆环上排列），
+    以及菜单的显示隐藏动画（补间动画-旋转） 参考“F:\迅雷下载\自定义控件\第一天\code\02_UkuDemo”
+
+
+16. 绘制圆角方框图片
+    使用PopUpWindow
+    
+    参考“F:\迅雷下载\自定义控件\第二天\code\work\03_SpinnerDemo13”
+
+
+
+17. 自定义view：
+	1. 自定义view继承View：
+
+		View.java中有measure, layout ,draw 三个方法分别实现自定义view的大小，位置，样子的实现
+		measure方法中回调onMeasure方法，自定义view时，先重写onMeasure,调setMeasuredDimension设置view大小；
+		layout方法中回调onLayout方法，自定义view继承view时，不需要重写onLayout,因为view中不需要再放置view,
+		        只有继承ViewGroup时，需要重写onLayout以实现子view的摆放位置定义。
+		
+		draw方法中回调onDraw方法，自定义view时在重写onMeasure,onLayout,后再重写onDraw方法，实现view的样子定义，通过调用invalide方法可以再次调用到onDraw方法
+
+
+		以自定义的ToggleSwitcher滑块开关按钮为例：“F:\迅雷下载\自定义控件\第二天\code\work\04_ToggleDemo13”
+
+	2. 继承ViewGroup：
+
+		1. 在继承ViewGroup时，重写onMeasure方法设置自定义ViewGroup大小时，首先要设置子View的大小，然后再设置自定义ViewGroup的大小;
+
+			子view的大小在ViewGroup的onMeasure中通过调子view的measure(int widthMeasureSpec, int heightMeasureSpec)告诉子view，根据ViewGroup分配给子view的宽widthMeasureSpec，
+				和高heightMeasureSpec，在此宽高范围内，子view自己再去确定自己的大小(通过在子view中重写onMeasure，调setMeasuredDimension设置子view的大小)
+
+			怎么确定在自定义ViewGroup中，需要分配给某个子view多大的布局范围呢（即如何确定在自定义ViewGroup的onMeasure方法中，调子view的measure时，传递的
+			宽widthMeasureSpec，高heightMeasureSpec分别是多少）？
+				可以通过在自定义ViewGroup中重写onFinishInflate方法，在此方法中通过getChildAt获取子view，再通过调用子view的getLayoutParams获取子view的LayoutParams，从
+				子view的LayoutParams中获取子view在其父控件中所占的宽高（params.with, params.height），
+				（onFinishInflate一旦回调，表示ViewGroup的布局填充解析完成，即此时子view已经在自定义ViewGroup中存在了，
+				   只有知道子view已经存在后，才能获取到子view在其父控件中所占的宽高）
+
+			
+			View.MeasureSpec是View中的一个静态内部类，它实现将一个int类型的测量大小size，和int类型的测量模式mode，包装在一个int类型的数值measureSpec中
+			measureSpec是int类型，有32位，其中高2位用来表示mode，低30位用来表示size， （MODE_SHIFT = 30 ， MODE_MASK  = 0x3 << MODE_SHIFT）
+			mode分 UNSPECIFIED（0 << MODE_SHIFT）  : 表示随意的，即重写onMeasure设置view大小时，如果mode位UNSPECIFIED，则view的父控件不会限制子view的大小（个人理解不会超过父控件的大小）
+			       EXACTLY（1 << MODE_SHIFT）      : 表示精确的，即重写onMeasure设置view大小时，view的大小应该根据形参widthMeasureSpec，heightMeasureSpec中的size来确定
+			       AT_MOST（2 << MODE_SHIFT）      : 表示最大不超过，即重写onMeasure设置view大小时，view的大小不能超过形参widthMeasureSpec，heightMeasureSpec中的size。
+			      
+			将size和mode包装成一个int类型的measureSpec ：(size & ~MODE_MASK) | (mode & MODE_MASK) 
+			从一个int类型的measureSpec中获取size ： measureSpec & ~MODE_MASK
+			从一个int类型的measureSpec中获取mode ： measureSpec & MODE_MASK
+
+			如果想获取自定义ViewGroup的size，可以在重写ViewGroup的onMeasure(int widthMeasureSpec, int heightMeasureSpec)方法时，
+					通过将ViewGroup的onMeasure的形参传递给MeasureSpec.getSize(int measureSpec)或MeasureSpec.getMode(int measureSpec)得到ViewGroup的父控件分配给ViewGroup的size和mode;
+			
+			调用MeasureSpec.makeMeasureSpec(int size, int mode),将size和mode封装在一个int类型的measureSpec中，并返回measureSpec。
+
+			在自定义ViewGroup时，给子view设置它的测量规格（即通过传给子view特定的measureSpec，告诉子view，父控件分派给它的宽高size，和测量模式mode）时，
+				应该在自定义ViewGroup重写onMeasure时，调用子view的measure(int widthMeasureSpec, int heightMeasureSpec)之前，
+					确定好传递给子view的measure方法的形参widthMeasureSpec和heightMeasureSpec;
+					
+			在调用子view的measure方法后，子view的测量规格就已知了，于是可以在确定执行了子view的measure方法后的其他位置（如自定义ViewGroup的onLayout中通过调用子view的
+			getMeasureWith, getMeasureHeight方法获取子view的测量宽高，即子view在父控件中所占的宽高）
+
+
+		2. 在继承ViewGroup时，重写onLayout方法，设置子view在自定义ViewGroup中的摆放位置（通过调用子view的layout(int l, int t, int r, int b)实现）
+			a. 子view的layout参数中四个顶点确定子view在父控件中的位置和宽高（子view的宽高是调measure方法测量后得到的父控件对子view的测量宽高getMeasureWith,getMeasureHeight）
+			b. 在父控件的布局空间摆放子view的位置时，是以父控件的左上角为坐标原点（在父控件没有被移动之前的初始状态下），向右为x轴正方向，向下为y轴正方向进行子view的位置布局的；
+				从坐标原点向右到父控件的measureWith,和从坐标原点向下到父控件的measureHeight的矩形范围内，为父控件在屏幕中的可视范围。
+				如果子view的位置布局，不在父控件的可视范围内，则子view不可见
+				layout方法中的四个顶点的坐标参数可以为负，也可以超出父控件的measureWidth或measureHeight的范围，超出部分则在屏幕中看不到
+			c. 在自定义ViewGroup（或自定义View）的onTouchEvent中可以通过调getScrollX，getScrollY获取自定义ViewGroup的矩形可视范围左上角的顶点坐标，（在父控件没有被移动之前的初始状态下对应布局空间的坐标原点）
+				在onTouchEvent中还可以调scrollTo(int x, int y)改变自定义ViewGroup的坐标原点，其中x,y是相对于自定义ViewGroup的初始坐标原点移动的距离，正负表示在坐标系中移动的方向
+				在onTouchEvent中还可以调scrollBy(int x, int y)改变自定义ViewGroup的坐标原点，其中x,y是相对于自定义ViewGroup的上一次改变后的坐标原点移动的距离，正负表示在坐标系中移动的方向
+			d. 在onTouchEvent中滑动屏幕时，效果上看起来是子view在跟着手指滑动的方向在坐标系上移动，实际的实现方式却是通过改变父控件的坐标原点在坐标系中的位置，
+				从而改变父控件在屏幕中的可视范围来实现的。并且子view随着手指滑动而移动的方向，跟父控件可视范围的移动方向是相反的！即父控件的坐标原点要向手指滑动的反方向移动，
+				才能将初始时不在可视范围内的子view显示出来
+
+			e. 在调用ScrollTo(int x, int y)移动自定义ViewGroup的坐标原点时，如果移动距离初始坐标原点较远时，动画效果会显得很快，比较生硬，
+				此时，可以利用Scroller类的startScroll(int startX, int startY, int dx, int dy, int duration)方法，根据duration设置的时间，减缓移动的动作;
+				其中startX,StartY确定开始执行移动动画时的坐标原点，dx,dy确定完成移动动画后view所在位置的坐标原点，duration设置移动动画完成的时间。
+				在自定义ViewGroup中调用startScroll后，还要紧跟着调用自定义ViewGroup的invalide方法，刷新界面（invalide方法的调用流程大致是：
+					1.先调用自定义ViewGroup的父控件的draw -->2.再调到父控件的dispatchDraw(canvas);-->3.再调到父控件的drawChild(canvas, child, drawingTime)
+					-->4.再在父控件中调到子控件自定义ViewGroup的draw(Canvas canvas, ViewGroup parent, long drawingTime)
+					-->5. 最后再调用到自定义ViewGroup的computeScroll()方法，而该方法需要自定义ViewGroup重写，实现滚动动画效果。
+
+				在重写computeScroll方法时注意，此方法是从startScroll开始的duration时间内重复地被回调的，每次回调时，可通过Scroller.getCurX和getCurY，
+				获取Scroller相对于自定义ViewGroup的初始坐标原点的滚动距离(正负表示坐标系中的方向)，于是可以通过在computeScroll中调用自定义ViewGroup的
+				scrollTo(intx, int y)方法和invalid()方法，将自定义ViewGroup的可视范围移动到Scroller滚动到的位置。从而实现在duration时间内自定义ViewGroup
+				的缓慢滚动的动画效果
+
+				在computeScroll方法中可通过调用Scroller的computeScrollOffset()方法，当返回值为false时表示没有计算滚动偏移量了，即滚动完成了。
+
+
+		3. 对于onDraw方法，因为是自定义ViewGroup，是一个容器，只需要摆放好子view的位置，一般情况下，不需要对ViewGroup本身的样子做处理，所以此方法在
+			自定义ViewGroup时可以不用重写
+				
+
+
+
+	3. 自定义view（或ViewGroup）时，重写onMeasure,onLayout,onDraw，只是绘制出一个静态的view，要实现view的事件，还需要重写onTouchEvent方法，
+		在onTouchEvent最后可以通过调用invalide方法，将view的动态位置变化，以触发onDraw方法的方式，绘制到Canvas中去
+		如果需要对外提供事件监听，也可以在onTouchEvent中处理
+
+
+	4. 自定义View（或ViewGroup）时，事件传递机制的处理，
+		1. 事件传递机制主要包含三个方法，dispatchTouchEvent(MotionEvent event), onInterceptTouchEvent(MotionEvent event), onTouchEvent(MotionEvent event)。
+			a. dispatchTouchEvent 负责分发事件给View本身，以及View的子view; 返回true或false都表示事件结束，即不再分发事件给本身以及子view;
+				返回super.dispatchTouchEvent时，则会进行事件分发，将事件传递给本身，并且调用本身的onInterceptTouchEvent方法（只是针对ViewGroup），
+				处理是否要将当前事件拦截，不再传递给子view;
+
+			b. onInterceptTouchEvent方法负责处理当ViewGroup收到分发的事件后，是否将此事件传递给子view。因为只有ViewGroup有子view，所以只有在ViewGroup.java中重写dispatchTouchEvent方法
+				时才会调到onInterceptTouchEvent方法，而View没有子view，所以View的dispatchTouchEvent方法中没有调用onInterceptTouchEvent方法；
+			   如果自定义ViewGroup时重写onInterceptTouchEvent对当前事件返回false，表示不拦截（ViewGroup.java中默认返回false）; 如果返回true，则表示拦截当前事件，不再传递给子view;
+			   另外子view也可以申请父控件不对其进行事件拦截，申请会改变一个状态值，在ViewGroup.java中的disptchTouchEvent方法中会根据这一状态值判断是否调用onInterceptTouchEvent方法，
+
+			c. 当view执行dispatchToucheEvent，将当前事件分发给本身时，会调到onTouchEvent方法，当onTouchEvent方法返回false时，表示view还会将当前事件回传给父控件;
+				当onTouchEvent方法返回true时，表示view不会再将当前事件回传给父控件了。
+
+
+	5. 在自定义ViewGroup时使用v4包中的ViewDragHelper实现子view的拖动效果：
+		a. 将自定义ViewGroup关联进ViewDragHelper中，并通过ViewDragHelper中的回调Callback实现对子view拖动状态的监听：ViewDragHelper.create(ViewGroup parent, Callback cb);
+			重写onTouchEvent,调用mViewDragHelper.processTouchEvent(event);用ViewDragHelper处理ViewGroup的事件
+		b. Callback提供多个回调方法供实现类重写，以完成当子view的某种拖动状态改变时所需要做的对应处理
+			b1. boolean tryCaptureView(View child, int pointerId) : 当用户想通过pointerId对应的手指拖动child子控件时，需要返回true，(自定义ViewGroup中可以通过
+										findViewById,或getChildAt方法获取某个子view，然后判断child是否为此子view)
+
+			b2. int clampViewPositionHorizontal(View child, int left, int dx): 重写此方法用来限制子view在水平方向的拖动范围，left表示child企图拖动到的x坐标轴上的位置
+											    类似的还有clampViewPositionVertical限制子view在竖直方向的拖动范围
+
+			b3. void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) ： 当子view被拖动时，位置改变的回调，left，top确定changedView被拖动到的当前
+										位置的左上角坐标; dx,dy表示changedView从上一个位置拖动到当前位置的偏移量。重写此方法时，可以用来处理当
+										这个被拖动的子view位置发生变化时，其他子view需要做些什么动作，如果其他子view的位置也要相对于changedView
+										变化，则可调用其他子view的layout方法重新布局，或者也可以用来处理其他事务。
+
+			b4. void onViewReleased(View releasedChild, float xvel, float yvel): 当对view的拖动事件完成时的回调，重写此方法，通过调用releasedChild.getLeft, getTop方法获取
+										子view在父控件中移动的位置，如果没有达到指定的位置，可以再做其他处理，譬如回滚到没拖动之前的位置
+
+		c. 调用ViewDragHelper.smoothSlideViewTo(View child, int finalLeft, int finalTop)方法，可实现在ViewGroup中对子控件child的拖动动画效果，finalLeft,finalTop是在父控件坐标系中
+						子view预移动的目标坐标点;不需要传递动画执行时间和开始动画的子view的坐标点，这些ViewDragHelper中都封装好了
+			c1. 在调用此方法后，需在ViewGroup中调用invalidate刷新界面
+			c2. 重写ViewGroup的computeScroll方法(在子view在拖动过程中此方法会不断被执行)，通过ViewDragHelper.continueSettling(true)的返回值为true判断子view处于被拖动状态，此时
+				需调用ViewGroup的invalidate方法刷新界面
+
+
+	6. 在重写自定义ViewGroup的onTouchEvent方法实现子view的移动时，将子view当做参照物（即静止的），移动ViewGroup的可视范围实现子view的移动效果;
+	   在使用ViewDragHelper实现自定义ViewGroup中子view的移动时，将ViewGroup的可视范围当做参照物（可视范围左上角顶点即ViewGroup布局空间的坐标原点），移动子view在ViewGroup布局空间中的位置实现
+		子view的移动效果
+
+	7. getScrollX, getScrollY的含义：获取View可视范围的左上角，在以View本身初始时的坐标原点建立的坐标系中的位置坐标;
+	   getLeft, getTop的含义：以父控件为参考系，view在父控件以可视范围左上角顶点为坐标原点建立的坐标系中的位置坐标
+		
+
+
+18. ScrollView的子view的大小即使都设置为match_parent，ScrollView所包裹的子View也不会填充ScrollView，
+	此时需要给ScrollView设置android:fillViewport="true"属性
+
+    ScrollView隐藏滚动条的显示，对ScrollView添加属性android:scrollbars="none"
+
+19. TextView的drawablepadding属性用来设置TextView中的drawable可文字之间的间距
+
+
+20. 在设置图片选择器的xml文件中,android:drawable除了可以用 @drawable 引用图片，还可以用 @color 引用values/color.xml中的颜色
+

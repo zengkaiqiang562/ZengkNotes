@@ -1,0 +1,84 @@
+1.工作区和暂存区
+	1. 工作区就是clone下来的一个git仓库文件夹（.git子文件夹不算工作区）
+	2. 工作区下的.git文件夹是git的版本库，版本库中保存了暂存区（stage）和当前分支等内容。
+
+	3. git add就是把文件修改添加到暂存区，git commit就是把暂存区的所有内容提交到当前分支
+
+
+2. 版本回退：
+	1. 在Git中，用HEAD表示当前版本，上一个版本就是HEAD^，上上一个版本就是HEAD^^，当然往上100个版本写100个^比较容易数不过来，所以写成HEAD~100。
+	2. git reset --hard HEAD^  回退到当前版本的上一个版本（当前版本不一定是最新提交的版本）
+	3. git reset --hard commit_id  回退到指定提交id的版本（因为从最新版本回退的历史版本后，不能再通过git reset --hard HEAD回退到最新提交版本，所以只有给定最新版本的commit id 回退）
+	4. git reflog  记录每次的git命令： 可以通过此指令查到最新提交版本的commit id 回到最新版本
+
+3. 撤销修改：
+	1. git checkout -- file只是丢弃工作区的修改，已经add到暂存区的修改不能通过此方式撤销
+	2. git reset HEAD file 可以把暂存区的修改撤销掉（即把add，但没有commit的修改撤销,还原成add之前的修改），重新放回工作区
+
+4. git checkout -b new_branch ：创建并切到新分支new_branch
+	相当于执行：1. git branch new_branch
+		   2.  git checkout new_branch
+
+5. git merge other_branch : 把其它分支的修改合并到当前分支（可能不满足快速合并，会有冲突）
+
+6. git log --graph命令可以看到分支合并图
+
+7. git cherry-pick commit-id  : 把其他分支到提交记录，合并到当前分支
+
+8. 生成patch和打入patch文件:
+	1) 生成patch的命令：  
+		a. 获取最后一次提交的patch(即最后一次执行git commit后生成的commit-id所对应的修改内容的patch)
+		   git format-patch -s -1 -o path(生成的patch文件想要存放的路径)  
+		
+		b. 取commit-id 生成一个patch
+		   git format-patch -1 commit-id
+			
+		c. commit-id 此次提交之后的patch
+		   git format-patch -s commit-id
+
+		d. 包含commit-id 提交之前的n次提交的patch
+		   git format-patch -n commit-id 
+
+		e. 获取所有patch
+		   git format-patch -s -9999 -o path
+
+
+	2)打入patch:
+	   2.0) 先检查patch文件：git apply --stat path(要打入的patch文件的存在路径)
+
+	        检查能否应用成功(没显示文字，就说明可用)：git apply --check path(要打入的patch文件的存在路径)
+
+	   2.1)包含commit信息: git am path(要打入的patch文件的存在路径)
+		注意 1. 在git am之前，执行git am --abort，放弃之前的am信息，执行一次全新的git am
+
+		     2. 一个典型的git am失败，可能是这样的:
+		        $ git am PATCH
+			Applying: PACTH DESCRIPTION
+			error: patch failed: file.c:137
+			error: file.c: patch does not apply
+			error: patch failed: Makefile:24
+			error: libavfilter/Makefile: patch does not apply
+			Patch failed at 0001 PATCH DESCRIPTION
+			When you have resolved this problem run "git am --resolved".
+			If you would prefer to skip this patch, instead run "git am --skip".
+			To restore the original branch and stop patching run "git am --abort".
+			
+			此时，遇到错误后，如下执行：
+			a. git apply --reject path(要打入的patch文件的存在路径)
+			b. 如果某个文件有冲突，会生成对应的.rej文件，比较rej文件，修改冲突
+			c. git add 所有文件
+			d. git am --resolved
+
+	   2.2)不包含commit信息: git apply path(要打入的patch文件的存在路径)
+			然后执行git add, git commit
+
+
+
+
+
+
+
+
+
+
+

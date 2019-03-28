@@ -1,0 +1,263 @@
+在应用里面用到的第三方jar的时候,系统里面有的尽量用系统里面的, 系统满足不了的话再用第三方的.
+1. 第三方jar包的在使用时,确认其它应用是否同样用到,如果用到的话LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES := ***　改成不一样的
+2. 系统第三方jar 一般在　extrenal 和　framework/opt下面
+
+
+1.每天的dailybuild发出的失败邮件，编译失败对应的log在以下位置：
+smb://share@192.168.1.152/dnjshare/356x/image/master
+
+
+
+对由于依赖库没编译导致的编译失败，根据依赖模块找编译路径：
+	make: *** 没有规则可以创建“out/target/product/evb3561s_65_m0/obj/SHARED_LIBRARIES/libandroid_runtime_intermediates/import_includes”需要的目标“out/target/product/evb3561s_65_m0/obj/SHARED_LIBRARIES/libhwui_intermediates/export_includes
+
+	上述编译失败是由于libhwui依赖没编译，通过find ./ -name Android.mk | grep libhwui 找到对应编译路径进行编译
+
+
+
+8317m环境编译：
+	1.下载基线代码：（在此之前如果ubuntu用的是giti要重命名成git mv /usr/bin/giti /usr/bin/git ，因为repo中用到git）
+		1. /work/build_8317m/目录下执行 git://192.168.1.152/git/tools/repo.git
+		2. /work/build_8317m/目录下执行 ./repo/repo init -u git://192.168.1.152/git/atc_mirror/atc/android/m/manifest -b master -m imotor.xml --no-repo-verify 
+		3. /work/build_8317m/目录下执行 ./repo/repo sync --force-sync 
+
+	2./work/build_8317m/下的allmake.sh脚本中的CPUS=24改为CPUS=4（或8，最开始是24），否则电脑带不动
+
+	3.allmake.sh只需要执行一次,即./allmake.sh（不用带参数, 在执行./allmake.sh时，要删除备份,如base.bak），
+			目的是编译系统，在原来没什么内容的out文件夹生成相关资源；（allmake.sh之前不要更新其它仓库，全用原始的代码编译）
+			(之后每次只需执行 . build/envsetup.sh --> lunch 选择模块就行)
+
+	4. 
+		1. 更新imotor的仓库：
+			更新 framework/base :  gitolite@192.168.1.152:8317m/frameworks/base 
+			更新 vendor/imotor :  gitolite@192.168.1.152:imotor/vendor/imotor
+			更新 device/atc : gitolite@192.168.1.152:8317m/device/atc.git
+			(device/mediatek 目录没有类似atc路径的仓库)
+			更新 framewok/mcu
+			更新 build
+
+		2. 	1.编译 vendor/imotor/proprietary/common 
+			2.再编 frameworks/base/core/res/
+			3.再编 frameworks/base/
+			4.再编 frameworks/mcu/
+			5.再编 vendor/imotor/proprietary/frameworks (编不过可能是vendor/imotor/proprietary/frameworks/res/下的资源没有关联依赖，使用mma再次编译即可)
+			6.再编 frameworks/base/services/ （编不过使用mma再次编译即可）
+			7.再编 vendor/imotor/proprietary/services
+
+		3. 对某些使用mm编译不过的模块，可能是与其相关的依赖模块没有关联，可用mma连带依赖模块一起编译
+
+	
+	
+	5.lunch选择full_ac83xx_evb-userdebug
+
+	6.直接替换已编译过的out文件夹，可省略上述step1和step4.2的步骤。即：不用执行./allmake.sh编译以及后续imotor相关模块的编译(如framewok/base,vender/imotor，等)
+
+
+
+
+
+
+
+
+利用minicom通过串口打印logcat的注意事项：
+	1. 在"#"结尾的提示符后输入：echo 0 > proc/sys/kernel/printk  (关闭内核打印日志，由于日志在打印，此命令输入时会受到干扰)
+	2. 在"#"结尾的提示符后输入：setprop persist.logd.enabled 1   (允许打印logcat日志)
+
+
+
+3561平台串口下切usb或host:
+	1. DEVICE：echo b_peripheral > /sys/devices/platform/mt_usb/musb-hdrc.0.auto/mode 
+	2. HOST：  echo a_host       > /sys/devices/platform/mt_usb/musb-hdrc.0.auto/mode 
+
+
+3561平台打开logcat的方法：
+	1. *#*#1235789#*#* 点一下 MTK Logger
+	2. *#*#109#*#* 打开"Logcat调试"
+	3. adb shell setprop persist.logd.enabled 1 
+
+
+
+
+给apk用系统签名
+    java -jar ./out/host/linux-x86/framework/signapk.jar ./build/target/product/security/platform.x509.pem 
+  		./build/target/product/security/platform.pk8 DMClient.apk.unsigned(需要签名的apk路径) DMClient.apk.signed（签名后的apk保存路径）
+
+    或用下面Android.mk
+
+    LOCAL_PATH := $(call my-dir)
+    include $(CLEAR_VARS)
+
+    # Module name should match apk name to be installed
+    LOCAL_MODULE := CarDvr_kfl
+    LOCAL_MODULE_TAGS := optional
+    LOCAL_SRC_FILES := $(LOCAL_MODULE).apk
+    LOCAL_MODULE_CLASS := APPS
+    LOCAL_MODULE_SUFFIX := $(COMMON_ANDROID_PACKAGE_SUFFIX)
+    LOCAL_CERTIFICATE := PRESIGNED
+    LOCAL_MODULE_PATH := $(TARGET_OUT)/vendor/operator/app
+    #LOCAL_CERTIFICATE := platform
+    #LOCAL_PRIVILEGED_MODULE := true
+    LOCAL_MULTILIB := 32
+    include $(BUILD_PREBUILT) 
+
+
+
+加时间打印logcat ： adb logcat -v time -s
+
+
+过滤掉不需要的log： adb logcat -s TAG | grep -v "要过滤log条目包含的字符串"
+
+
+
+
+
+在framework中添加字符串报错：android.process.acore停止运行：
+	原因：在values/string.xml values-zh-rCH/string.xml中加入字符串，在values/public.xml中写死id，
+		报错提示其它的string资源id找不到
+	
+	解决：在imotor下添加字符串解决
+
+	备注：frameworks/base/core/res下加入string，用com.android.internal.R.string引用
+	      vendor/imotor/proprietary/frameworks/res下加入string，用com.imotor.framework.R.string引用
+
+
+
+
+====== ac83xx平台 =======
+硬件端口   -  配置端口 -  软件节点
+Uart0 – 1 -  ttyMT1   （固定BT）
+Uart1 – 2 -  ttyMT2 （固定GPS）
+Uart2 – 3 -  ttyMT3  默认作为DVP debug，uboot ac83xx_board.c dvp_uart_init() fgUart4DvpDebug = FALSE
+Uart3 – 4 -  ttyMT4 （固定mcu通信）
+Uart4 – 5 -  ttyMT5
+Uart5 – 6 -  ttyMT6 复用AP debug，若DVD uart为6，arm2设置anroidboot.hwm，内核判断是否关闭debug及配置uart6.
+
+====== mt3561平台 =======
+硬件端口   -  配置端口  -  软件节点
+UART0  -  0 - ttyMT0
+UART1  -  1 - ttyMT1
+UART2  -  2 - ttyMT2
+UART3  -  3 - ttyMT3 （固定mcu通信）
+
+
+
+
+SerialDemo中可选的串口项是在frameworks/base/core/res/res/values/config.xml中配置的，直接在SerialDemo中加入没有配置的串口号，会报错：
+	java.lang.IllegalArgumentException: Invalid serial port
+
+
+替换boot.img：
+	1. adb push boot.img路径 /data/
+	2. adb shell dd if=/data/boot.img of=/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/boot
+	3. adb shell sync && adb shell reboot
+
+
+adb 打开log：
+	1. mtklog ：adb shell am start com.mediatek.engineermode/.EngineerMode
+	2. clwlog : adb shell am start com.imotor.log/.SettingsActivity
+
+
+将一个新建的应用仓库加入到编译，并打包到update包中
+	1. 加入编译 ： 将应用仓库地址添加到manifest中，如3561平台添加到仓库gitolite@192.168.1.152:356x/platform/manifest.git中的对应分支下的default.xml中
+	2. 打包到update中 ： 将应用代码中的Android.mk文件内的LOCAL_PACKAGE_NAME的属性值加入到vendor/imotor/config/common.mk文件中的PRODUCT_PACKAGES属性上
+
+
+
+追踪代码流程的调用堆栈信息：
+	Thread.dumpStack();
+	(通过System.err TAG打印)
+
+
+
+Settings.Gobal(System,Secure)和IMSettings.Gobal(System,Secure)存储的数据，
+都放在/data/system/users/0下对应的xml文件中。
+
+
+加密软件到期重连（外网）：
+	Server:183.62.179.211
+	Port: 8001
+
+
+机器HD下进行OTA升级(不需要U盘)
+1.adb shell后执行： echo "--update_package=/fota/" > /cache/recovery/command
+2.将升级相关的文件(如update.zip,config.zip,MCUAndroid2.bin,MCUAndroid2.CHK,mtz_custom等文件)，push到机器hd的/sdcard/目录下,如：
+	adb push /media/F6EB-F396/update.zip /sdcard/
+3.全部push到/sdcard/后，执行adb shell进入机器，再执行reboot recovery重启升级
+
+
+
+文件服务器地址：
+1. 192.168.1.152:dnjshare     share   sh123!
+2. 192.168.1.152:share        share   share123
+3. 192.168.1.150:myshare:     share   sh123
+
+
+autoenv仓库地址： git://192.168.1.152/git/tools/autoenv.git
+mtk仓库地址：     smb://192.168.1.152/share/tools/mtk
+
+
+实时打印kernel内核日志
+adb shell
+cat /proc/kmsg
+
+
+查看可用内存
+adb shell
+cat /proc/meminfo
+
+
+
+1. 休眠，唤醒，断电开机的相关log信息：
+	a. Acc休眠完成的log： <0>-(0)[7209:system_server][SPM] [imotor] >>>>> suspend done. <<<<<
+	b. Acc唤醒的log信息： <0>-(0)[7209:system_server][SPM] [imotor] >>>>> resumed done. <<<<<
+
+	c. 断电开机log信息： 
+						[PWRAP] pwrap_init_preloader
+						[PWRAP] pwrap_init
+
+
+2. 静音接口：（IMAudioServiceImpl.java）
+	public void setMuted(boolean muted, boolean showUI) 设置Stream的静音状态
+
+	public void setDeviceMuted(boolean muted) 设置PA（喇叭功放）和RCA（外部接口）的静音状态
+
+	private void setRCAMute(boolean muted, boolean showUI) 设置RCA（外部接口）的静音状态
+
+	private void setPAMuted(boolean muted, boolean showUI) 设置PA（喇叭功放）的静音状态
+
+	public void setSoftMuted(boolean muted) 设置7729的静音状态
+
+
+
+sublime, 代码编辑器，可关联一个目录下的所有代码进行相互跳转查看
+
+
+使用交叉编译工具arm-linux-androideabi-addr2line可以根据native代码报错时给出的地址值，找到对应so库源码的出错的代码行
+ 例如： arm-linux-androideabi-addr2line -C -f -e  ~/workspace/DLNA/libs/armeabi/libctrlpt.so 0003deb4
+		其中，0003deb4为堆栈信息中pc的值
+
+
+adb shell input keyevent keycode  ： 模拟发按键
+
+
+getevent指令解释：
+	1. 如下所示的getevent数据：
+	/dev/input/event3: 0003 0030 00000016
+	/dev/input/event3: 0003 0039 00000000  //0003表示是Touch事件，0039表示Touch事件结束
+	/dev/input/event3: 0001 014a 00000001
+	/dev/input/event3: 0003 0035 ffffffd5  //0035表示x坐标，ffffffd5表示x坐标的值
+	/dev/input/event3: 0003 0036 00000084  //0035表示y坐标，00000084表示y坐标的值
+	/dev/input/event3: 0000 0002 00000000
+	/dev/input/event3: 0000 0000 00000000
+	/dev/input/event3: 0003 0030 00000016
+	/dev/input/event3: 0003 0039 00000000  //0003表示是Touch事件，0039表示Touch事件结束
+
+	2. 如下所示的getevent数据：
+	/dev/input/event3: 0001 0072 00000001  //0001表示key按键事件；0072表示按键码，此处为音量减；00000001表示按下
+	/dev/input/event3: 0000 0000 00000000
+	/dev/input/event3: 0001 0072 00000000  //0001表示key按键事件；0072表示按键码，此处为音量减；00000000表示松开
+	/dev/input/event3: 0000 0000 00000000
+
+	3. 打印getevent事件的时候用 adb shell getevent -l
+		可以明显看到down/up是否成对出现
+

@@ -1,0 +1,1 @@
+![](img/mediaplayer_state_diagram.gif) 
