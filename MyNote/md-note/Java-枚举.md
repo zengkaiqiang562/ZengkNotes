@@ -171,3 +171,6 @@ java.lang.Object，因此枚举类不能显示继承其他类。java.lang.Enum�
 
 编译上面程序，可以看到生成Gender.class、Gender$1.class和Gender$2.class三个文件。这三个文件可以
 证明枚举值 MALE 和 FEMALE 实际上是 Gender 的匿名子类的实例，而不是Gender类的实例。
+
+## 枚举类的values()方法 ##
+values()方法是一个静态方法，返回枚举类的所有枚举值组成的数组。
