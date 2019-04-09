@@ -74,3 +74,7 @@
 提取成成员变量  Refactor > Extract > Field... ： Ctrl + Alt + F
 
 提取成方法  Refactor > Extract > Method... ： Ctrl + Alt + M
+
+
+## AS 编辑器设置打开多个文件 ##
+Settings > Editor > general > Editor Tabs > Tab closing Policy
