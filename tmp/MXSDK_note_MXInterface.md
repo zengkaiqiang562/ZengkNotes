@@ -2,6 +2,7 @@
 	public enum MXInterface
 
 	...,
+	GET_PERSONAL_INFO("/api/v1/users/%s?include_user_info=true&is_followed_by=%s", HashMap.class),
 	CONTACT_SEARCH("/api/v1/departments/search", Object.class),
 	...;
 
