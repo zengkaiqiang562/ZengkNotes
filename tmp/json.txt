@@ -1,0 +1,167 @@
+{
+  "items":[
+  	      {
+  	        "id":205,
+  	        "name":"安理",
+  	        "type":"user",
+  	        "pinyin":"anli",
+  	        "avatar_url":"/photos/user_photo_2",
+  	        "email":"",
+  	        "cellvoice1":"",
+  	        "display_order":9999,
+  	        "login_name":"lal",
+  	        "cellvoice2":null,
+  	        "workvoice":null,
+  	        "extension":null,
+  	        "dept_name":"教学单位/学前教育单位",
+  	        "dept_id":6,"dept_code":"001002001",
+  	        "call_phones":"",
+  	        "permission":7,
+  	        "title":"admin",
+  	        "online":"mobile"
+  	      },
+  	      {
+  	        "id":111,
+  	        "name":"贺安筠",
+  	        "type":"user",
+  	        "pinyin":"heanjun",
+  	        "avatar_url":"/photos/user_photo_1",
+  	        "email":"abc@163.com",
+  	        "cellvoice1":"12312341234",
+  	        "display_order":9999,
+  	        "login_name":"heanjun",
+  	        "cellvoice2":null,
+  	        "workvoice":null,
+  	        "extension":null,
+  	        "dept_name":"教学单位/马克思主义学院",
+  	        "dept_id":15,"dept_code":"001002010",
+  	        "call_phones":"12312341234",
+  	        "permission":7,
+  	        "title":"副教授",
+  	        "online":"offline"
+  	      },
+  	      {
+  	        "id":169,
+  	        "name":"周安阳",
+  	        "type":"user",
+  	        "pinyin":"zhouanyang",
+  	        "avatar_url":"/photos/user_photo_2",
+  	        "email":"abc@163.com",
+  	        "cellvoice1":"12312341234",
+  	        "display_order":9999,
+  	        "login_name":"zhouanyang",
+  	        "cellvoice2":null,
+  	        "workvoice":null,
+  	        "extension":null,
+  	        "dept_name":"党政管理机构/教务处",
+  	        "dept_id":24,
+  	        "dept_code":"001001008",
+  	        "call_phones":"12312341234",
+  	        "permission":7,
+  	        "title":"主任",
+  	        "online":"offline"
+  	      }
+  	],
+  
+  "meta":{"thread_order":"updated_at"},
+  
+  "references":[]
+}
+
+----------------
+
+{
+  "id":111,
+  "name":"贺安筠",
+  "account_id":111,
+  "network_id":2,
+  "pinyin":"heanjun",
+  "hidden":false,
+  "user_code":"001002010:010",
+  "dept_code":"001002010",
+  "dept_id":15,
+  "actived":true,
+  "suspended":0,
+  "short_pinyin":"haj",
+  "role_code":1,
+  "root_domain_id":2,
+  "login_name":"heanjun",
+  "real_name":null,
+  "id_number":null,
+  "real_name_approved":false,
+  "dept_ref_id":"2018073015332594461bcae",
+  "conversations_feed_id":761,
+  "api_url":"/api/v1/users/111",
+  "web_url":"#users/111",
+  "avatar_url":"/photos/user_photo_1",
+  "account_channel":"/u/TUtZgKlT4aJIIK6xMJioHQ",
+  "email":"abc@163.com",
+  "feedback_channel":"/s",
+  "uploaded_photo":false,
+  "join_time":"2019-01-17T13:50:12+08:00",
+  "joined_domains":[],
+  "default_domain_id":null,
+  "admin":null,
+  "organization_admin":false,
+  "is_a_admin_about_domain":false,
+  "is_a_domain_admin":false,
+  "is_a_ocu_admin":false,
+  "is_a_app_admin":false,
+  "is_only_ocu_admin":false,
+  "ocu_admin":false,
+  "online":"offline",
+  "type":"user",
+  
+  "stats":{"followers":0,"followings":3},
+  
+  "user_info":{
+  	"account_info":{"email":"abc@163.com","language":"zh-CN","time_zone":"Asia/Shanghai"},
+  	"department":"教学单位/马克思主义学院",
+  	"title":"副教授",
+  	"signature":null,
+  	"experience":null,
+  	"skills":null,
+  	"interests":null,
+  	"emp_code":"",
+  	"cellvoice1":"12312341234",
+  	"cellvoice2":null,
+  	"workvoice":null,
+  	"extension":null,
+  	"workfax":null,
+  	"preferred_mobile":null,
+  	"position":null
+  },
+  
+  "title":"副教授",
+  
+  "user_show":[
+  	{"column":"avatar","name":"头像","revisable":true,"dial":false,"value":"/photos/user_photo_1"},
+  	
+  	{"column":"qrcode","name":"我的二维码","revisable":false,"dial":false,"value":"/qr_add_friend/get_qrcode"},
+  	
+  	{"column":"emp_code","name":"工号","revisable":false,"dial":false,"value":""},
+  	
+  	{"column":"name","name":"姓名","revisable":true,"dial":false,"value":"贺安筠"},
+  	
+  	{"column":"department","name":"部门","revisable":false,"dial":false,"value":"教学单位/马克思主义学院"},
+  	
+  	{"column":"title","name":"职务","revisable":false,"dial":false,"value":"副教授"},
+  	
+  	{"column":"cellvoice1","name":"手机号","revisable":true,"dial":true,"value":"12312341234"},
+  	
+  	{"column":"workvoice","name":"工作电话","revisable":true,"dial":true,"value":""},
+  	
+  	{"column":"email","name":"邮箱","revisable":false,"dial":false,"value":"abc@163.com"},
+  	
+  	{"column":"position","name":"位置","revisable":true,"dial":false,"value":""},
+  	
+  	{"column":"id_number","name":"身份证号","revisable":true,"dial":false,"value":""}
+  ],
+  
+  "call_phones":"12312341234",
+  "permission":7,
+  "is_followed_by":false,
+  "export_chat":false,
+  "enable_actions":true,
+  "dept_name":"教学单位/马克思主义学院"
+}
