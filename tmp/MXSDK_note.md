@@ -140,6 +140,11 @@
                 Intent var3 = new Intent(ContactDetailActivity.this, ConversationActivity.class);
                 if (var2 != null) {
                     var3.putExtra("conversation_object", var2);
+			
+					//处理未读消息	
+					//1. 将Conversation对象var2中的未读消息的数量通过"conversation_unread"封装到Intent对象var3中
+					//2. 关闭 显示未读消息的通知。
+					
                     u.a(ContactDetailActivity.this, var2, var3);
                 } else {
                     di.C(ContactDetailActivity.this).a(ContactDetailActivity.this.aeP);
