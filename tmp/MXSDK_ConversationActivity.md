@@ -370,3 +370,7 @@
 		//切换指示器
 		this.BX.setOnPageChangeListener(new OnPageChangeListener() {...});
 	}
+
+
+## MXSDK的 ht.java ##
+发送聊天消息的入口
