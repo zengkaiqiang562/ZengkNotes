@@ -1,3 +1,105 @@
+### AllAppInfo ###
+在进入 全部应用界面AllAppsActivity 从/api/v1/apps/full 返回的数据封装成 AppAppInfo
+
+	private List<String> addAppOids;
+    private List<AppInfo> allAppList;
+    private List<AppInfo> allCategoryList;
+
+### AppInfo ###
+代表我的应用中，某个应用的信息
+
+	private String android_launcher;
+    private String app_id;
+    private int type;
+    private String description;
+    private int id;
+    private int oid;
+    private String avatar_url;
+    private boolean is_default_install;
+    private String name;
+    private int network_id;
+    private String package_name;
+    private String upgrade_info_url;
+    private String url;
+    private int current_user_id;
+    private int app_order;
+    private int show_in_flipper;
+    private String version;
+    private int version_code;
+    private boolean isPlaceHolder = false;
+    private boolean appCenterAddButton = false;
+    private long max_version_size;
+    private String max_version_fingerprint;
+    private boolean auth_enable;
+    private boolean hidden;
+    private List<String> apps;
+    private boolean bundled_install;
+    private String commonUse = "Y";
+    private List<String> categories;
+    private boolean intranet_enable = true;
+    private boolean internet_enable = true;
+    private String flipper_avatar_url;
+    private String progressText = null;
+
+### AppUpgradeInfo ###
+在AllAppsActivity界面 点击未安装的应用时，会根据 AppInfo中的upgrade_info_url属性发出请求，返回的某个应用的安装更新数据封装在此AppUpgradeInfo中
+如"考勤"应用的upgrade_info_url=/api/v1/apps/update_info.json?app_id=attence
+
+    private String app_name;
+    private String app_id;
+    private long size;
+    private String fingerprint;
+    private String version;
+    private int version_code;
+    private String description;
+    private String upgrade_url;
+    private String updateTime;
+    private String smart_url;
+    private long smart_size;
+    private boolean isMandatoryUpgrade;
+    private boolean isNeedUpgrade;
+    private boolean isSmartUpgrade;
+
+
+### ConversationOCUOwner ###
+此类代表一个公众号
+
+	package com.minxing.kit.internal.common.bean.im;
+
+	private int id;
+    private int current_user_id;
+    private int public_person_id;
+    private String person_name;
+    private int role_code;
+    private String avatar_url;
+    private String signature;
+    private String ocuID;
+    private String displayOrder;
+    private String ocuType;
+    private int top_display_order;
+    private int catalog_id;
+    private boolean catalog_notify;
+    private boolean following;
+    private boolean placeHolder;
+    private boolean followed_by_current;
+
+
+### ContactsPO ###
+
+	package com.minxing.kit.internal.common.bean.contact
+
+	private int departID;
+
+    private List<IContact> list;
+
+    private boolean allSelected;
+    private String deptFullName;
+
+	public ContactsPO(int var1, List<IContact> var2) {
+        this.departID = var1;
+        this.list = var2;
+    }
+
 ### IContact.java ###
 
 	package com.minxing.kit.internal.common.bean.contact;

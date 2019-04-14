@@ -44,7 +44,7 @@
 
         this.mxSearchBtn = (ImageButton)this.findViewById(id.mx_search_btn); //default_header中右上角的搜索图标
 
-        this.contactContent = (LinearLayout)this.findViewById(id.mx_contact_content);
+        this.contactContent = (LinearLayout)this.findViewById(id.mx_contact_content);  //显示通讯录内容，在代码中动态添加内容，
     }
 
 	private void initHeaderView() {
@@ -96,6 +96,24 @@
 
     }
 
+	private void fillContent() {
+		//根据this.params选择contactView的类型，
+		//params.getMode为100时对应NormalContactView， （底部导航栏“通讯录”进入）
+		//101对应MultiChoiceContactView，(敏行界面右上角的发起群聊菜单进入)
+		//102对应SingleChoiceContactView
+        this.contactView = a.me().a(this, this.params);
+
+        this.contactView.setParams(this.params);
+        this.contactView.initView();
+
+        this.contactView.cr(this.params.getStartDeptID()); //最终调用contactView.cs(final int var1)初始化通信录内容，并调用contactView.N(true)刷新
+
+        this.contactContent.removeAllViews();
+        this.contactContent.addView(this.contactView, new android.widget.RelativeLayout.LayoutParams(-1, -1));
+
+        this.contactView.mx(); //监听广播“com.minxing.refresh.contact”，收到广播时会调用BaseContactView.this.mt();初始化通讯录内容this.aiX
+    }
+
 
 ## mx_tab_contacts.xml ##
 
@@ -109,3 +127,163 @@
     <include
         android:id="@+id/default_header"
         layout="@layout/mx_contacts_header_view" />
+
+
+## com.minxing.kit.ui.contacts.a.java ##
+
+	public BaseContactView a(Context var1, ContactsParams var2) {
+        if (var2.getMode() == 100) {
+            return new NormalContactView(var1);
+        } else if (var2.getMode() == 101) {
+            return new MultiChoiceContactView(var1);
+        } else {
+            return var2.getMode() == 102 ? new SingleChoiceContactView(var1) : null;
+        }
+    }
+
+## com.minxing.kit.internal.contact.view.BaseContactView.java ##
+
+	public class BaseContactView extends RelativeLayout implements IXListViewListener
+
+	protected Stack<ContactsPO> aiX = new Stack(); // ContactsPO中保存了集合List<IContact>
+
+	public BaseContactView(Context var1) {
+        super(var1);
+        this.mContext = var1;
+
+        this.contactManager = MXUIEngine.getInstance().getContactManager();
+    }
+
+	public void initView() {
+		
+		View var1 = View.inflate(this.mContext, layout.mx_contacts_screen, (ViewGroup)null);
+
+		this.aiW = (TextView)var1.findViewById(id.deptTitle);
+
+        this.aiQ = (XListView)var1.findViewById(id.mx_contact_list);
+		this.aiQ.setXListViewListener(this);
+
+		this.ahn = (LinearLayout)var1.findViewById(id.index_bar); //右侧的索引条
+
+		this.aht = (TextView)var1.findViewById(id.show_head_toast_text); //滑动索引条时，在中间显示的当前索引值
+        this.ahs = (LinearLayout)var1.findViewById(id.index); //显示当前索引值的控件this.aht 的容器
+
+        
+	}
+
+	protected void cs(final int var1) {
+		/* 
+			初始化 this.aiX集合，
+			a. 可能直接从personal_contact_list数据表中查到当前用户的通讯录内容
+			b. 也可能通过MXInterface.SYNC_PERSONAL_CONTACT_FROM_SERVER（/api/v1/subscriptions/users）从网络查找当前用户的通讯录内容，
+				然后在更新到personal_contact_list数据表中
+		*/
+		
+		this.N(true); //刷新通讯录内容
+	}
+
+	protected void N(boolean var1) {
+
+		List var2 = ((ContactsPO)this.aiX.peek()).getList();
+
+        int var3 = ((ContactsPO)this.aiX.peek()).getDepartID();
+        String var4 = ((ContactsPO)this.aiX.peek()).getDeptFullName();
+
+		//根据是否存在通讯录内容显示ListView 或“no data”提示
+        if (var2.isEmpty()) {
+            this.nodata.setVisibility(0);
+            this.aiQ.setVisibility(8);
+        } else {
+            this.nodata.setVisibility(8);
+            this.aiQ.setVisibility(0);
+        }
+
+		//this.agu是ListView的适配器
+		if (this.agu == null) {
+			//初始化适配器
+            this.agu = new ei(var2, this.mContext, 
+								this.params.getMode(), this.params.getPersonInfo(), 
+								this.params.isDeptSelectAble(), this.params.getStartDeptID(), 
+								this.params.getSelectedPersons());
+
+            this.agu.setParams(this.params);
+            this.aiQ.setAdapter(this.agu);
+        } else {
+			//刷新适配器中的通讯录内容数据
+            this.agu.F(var2);
+            this.agu.notifyDataSetChanged();
+        }
+
+	}
+
+## com.minxing.colorpicker.ei ##
+展示通讯录内容的ListView的适配器
+
+	public class ei extends BaseAdapter
+
+	private List<IContact> aif;
+
+	public ei(List<IContact> var1, Context var2, int var3, int var4, boolean var5, int var6, List<String> var7) {
+        this.mContext = var2;
+
+        this.aif = var1;
+
+        this.mode = var3; //ContactsParams.getMode()
+        this.personInfo = var4;  //ContactsParams.getPersonInfo()
+        this.aig = var5;  //ContactsParams.isDeptSelectAble()
+        this.aii = var6;  //ContactsParams.getStartDeptID()
+        this.aij = var7;  //可能是null
+
+        this.currentUserID = df.iA().iB().getCurrentIdentity().getId();
+
+        DiskCacheUtils.removeFromCache(Scheme.DRAWABLE.wrap(drawable.mx_icon_department + ""), ImageLoader.getInstance().getDiskCache());
+    }
+
+	public int getItemViewType(int var1) {
+        switch(null.zZ[((IContact)this.aif.get(var1)).getContactType().ordinal()]) {
+
+	        case 1: //ContactType.PEOPLE
+	            return 0;
+	        case 2: //ContactType.DEPARTMENT
+	            return 1;
+
+		...
+	}
+
+	public View getView(int var1, View var2, final ViewGroup var3) {
+	
+		IContact var4 = (IContact)this.aif.get(var1);
+
+		this.aih = new ei.a(); //this.aih 是ViewHolder	
+	
+		switch(null.zZ[var4.getContactType().ordinal()]) {
+            case 1:
+                var2 = LayoutInflater.from(this.mContext).inflate(layout.mx_cmcontact_person_item, (ViewGroup)null);
+                this.aih.avatar = (ImageView)var2.findViewById(id.avatar); //左侧头像图标
+                this.aih.FY = (ImageView)var2.findViewById(id.selectIcon); //右侧选择图标
+                this.aih.air = (ImageView)var2.findViewById(id.email_icon); //邮箱图标
+                this.aih.ais = (ImageView)var2.findViewById(id.sms_icon); //两朵云的图标
+                this.aih.ait = (ImageView)var2.findViewById(id.call_icon); //右侧电话图标
+                this.aih.aiu = (ImageView)var2.findViewById(id.chat_icon); //右侧聊天图标（一朵云）
+                this.aih.aiv = (TextView)var2.findViewById(id.cell_num);  //头像图标右下方的电话号码
+                this.aih.tv = (TextView)var2.findViewById(id.name); //头像图标右上方的名字
+                this.aih.aid = (TextView)var2.findViewById(id.index_label);
+                this.aih.FX = (TextView)var2.findViewById(id.department);
+                this.aih.aiw = (TextView)var2.findViewById(id.mail_address);
+                this.aih.aiA = var2.findViewById(id.mx_contacts_avatar_cover);
+                this.aih.aiz = (ImageView)var2.findViewById(id.mx_contacts_status_icon); //名字右边的电话图标
+                var2.setTag(this.aih);
+                break;
+			case 2:
+                var2 = LayoutInflater.from(this.mContext).inflate(layout.mx_cmcontact_dept_item, (ViewGroup)null);
+                this.aih.tv = (TextView)var2.findViewById(id.name);
+                this.aih.avatar = (ImageView)var2.findViewById(id.avatar);
+                this.aih.aiy = (ImageView)var2.findViewById(id.arrow_right);
+                this.aih.FY = (ImageView)var2.findViewById(id.selectIcon);
+                this.aih.FY.setTag(drawable.mx_icon_checkbox_normal);
+                this.aih.aix = (ImageView)var2.findViewById(id.selectIconSingle);
+                this.aih.aix.setTag(drawable.mx_radio_button_unchecked);
+                var2.setTag(this.aih);
+                break;
+		}
+	}

@@ -1,0 +1,29 @@
+1.苹果企业开发账号和个人开发者账号的区别
+http://www.applicationloader.net/blog/zh/547.html
+
+2.使用windows如何将自己开发的App上传到App Store
+http://www.applicationloader.net/appuploader/download.php
+3.使用mac如何将自己开发的App上传到App Store
+
+要使用账号生成APPID
+要生成对应的证书
+安装了xcode后
+通过工具将自己打包好的App上传到App Store
+
+https://www.jianshu.com/p/a391c1aad96b
+
+4.生成测试证书
+https://www.jianshu.com/p/02974e67b181
+
+5.生成发布证书
+
+发布证书只有在正式发布app时才会用到
+测试证书一个设备对应的其实是这个证书与这个设备之间的描述文件，真正需要注册多个的是这个设备和测试证书之间的描述文件
+https://docs.apicloud.com/Dev-Guide/iOS-License-Application-Guidance#3
+
+6.正式发布上架前的一些注意点
+https://itunesconnect.apple.com/
+http://www.applicationloader.net/blog/zh/88.html
+
+7.在我看来hybird模式开发App选择哪个开发比较好
+DCloud，ApiCloud，cordova
