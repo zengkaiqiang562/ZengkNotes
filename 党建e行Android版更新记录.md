@@ -1,0 +1,3 @@
+更新config.xml中的host地址为47.104.140.108
+更新assets中dx的plugins.properties中的版本
+更新assets中dw的plugins.properties中的版本
